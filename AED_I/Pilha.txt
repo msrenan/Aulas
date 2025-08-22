@@ -1,0 +1,21 @@
+Pilha - Alocação estática ou dinâmica
+
+Conceito de uma pilha de pratos: Você pode colocar um prato no topo e retirá-lo. Mas não consegue colocar um prato no meio da pilha ou retirar 
+um prato do meio da pilha.
+
+- Definição:
+	Novos elementos entram somente pelo topo da filha, o único elemento que pode ser removido da pilha, é quem está no topo da pilha.
+	Modelo: L.I.F.O. -> Last in, First Out.
+
+	Operações sobre pilhas:
+		Empilhar(Pilha, Dado) -> Deu certo
+		Desempilhar(Pilha, Dado) -> Deu certo
+		Vazia(Pilha) -> Bool
+		Cheia(Pilha) -> Bool
+		Criar(Pilha) -> Construtor que irá criar uma pilha nova
+
+- Alocação Estática
+O espaço de memória para todos os elementos que devem fazer parte do programa é especificado previamente.
+Logo, os dados não podem ser alterados, nem podem ser armazenados em uma pilha mais dados do que o especificado previamente.
+
+

@@ -1,0 +1,15 @@
+Media final = 0.5 * projeto + 0.4 * prova + 0.1 * participação
+
+Projeto:
+
+Duas aplicações
+Cada uma deve apresentar duas estruturas e dados
+
+(LER A ESPECIFICAÇÃO DO PROJETO)
+
+---------------------------------------------
+Tipo Abstrato de Dados (TAD)
+
+É um conjunto de Dados a serem armazenados, e por um grupo de Operadores (Ações) que podem ser aplicados sobre esses dados.
+
+
