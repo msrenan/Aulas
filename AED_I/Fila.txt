@@ -1,0 +1,11 @@
+É uma estrutura de dados que funciona no modelo F.I.F.O - First in, First Out.
+Em inglês, queue.
+
+Operadores:
+- Insere()
+- Retira()
+- Vazia()
+- Cheia()
+- Cria()
+
+

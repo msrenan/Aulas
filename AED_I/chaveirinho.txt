@@ -1,0 +1,26 @@
+bool remove(L, X) {
+	NodePTR aux = L;
+	if (aux->valor == X) {
+		X = L->info;
+		L = L->next;
+		delete aux;
+	}
+	
+	NodePTR prev = aux;
+	aux = aux->next;
+	
+	while(aux->info != X && aux != L) {
+		aux = aux->next;
+		prev = prev->next;
+	}
+	
+	if (aux == L) {
+		return false;
+	} else {
+		X = aux->info;
+		prev->next = aux->next;
+		delete aux;
+		return true;
+	}
+	
+}

@@ -1,0 +1,38 @@
+
+// Participantes: Danilo Magalhães Valois (847901)
+//		  Gabriel Kazushige Vieira Kosaihira (844938)
+		  Renan Machado Santos (846346)
+	---------------------------------
+	|         Cachorro              |
+	|-------------------------------|
+	| - nome: String                | 
+	| - idade: int                  |
+	| - raça: String		        |
+	| - peso: double		        |
+	| - porte: String		        |
+	| - cor_do_pelo: String		    |
+	| - alimentado: bool		    |
+	| - acordado: bool		        |
+	---------------------------------
+	| + CriaCachorro(nome, idade	|
+	|		 raça, peso	            |
+	|		 porte, cor)	        |
+	| + comer() -> alimentado = true|
+	| + acoradar() ->		        |
+	|	acordado = true		        |
+	| + dormir() ->			        |
+	|	acorado = false		        |
+	| + latir() -> void		        |
+	| + getIdade() -> idade		    |
+	| + getNome() -> nome		    |
+	| + getRaca() -> raca		    |
+	| + getPeso() -> peso		    |
+	| + getCorPelagem() ->		    |
+	|	cor_do_pelo		            |
+	| + getPorte() -> Porte		    |
+	| + estaAlimentado() ->		    |
+	|	alimentado		            |
+	| + estaAcordado() ->		    |
+	|	acordado		            |
+	| + acariciar() -> void 		|
+	---------------------------------

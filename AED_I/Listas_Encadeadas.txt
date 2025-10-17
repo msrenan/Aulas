@@ -1,0 +1,10 @@
+Em uma lista encadeada os elementos são armazenados não-sequencialmente na memória, ou seja, cada elemento contém seu valor e
+o endereço do próximo elemento.
+
+Cada elemento fica armazenado em um nó. Cada nó contém o valor de um elemento e o endereço do próximo elemento da lista.
+O último elemento da lista aponta para um elemento de parada, que indica o fim da lista.
+
+Nó (2 componentes):
+ - Valor;
+ - Próximo Nó;
+É uma definição recursiva.

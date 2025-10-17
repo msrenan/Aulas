@@ -1,0 +1,13 @@
+Árvore: Uma estrutura que começa em uma raíz e se expande em ramos e folhas.
+É uma estrutura recursiva, sendo que cada ramo pode ser enxercado como uma sub-árvore. A folha não pode gerar um novo ramo.
+
+Grau: O número máximo de subárvores que podem ser geradas.
+
+Árvore binária: Cada nó possuí no máximo 2 nós filhos.
+
+Árvore binária de busca: Uma árvore de especial que atende a 3 critérios:
+ - A informação de cada nó na subárvore da esquerda da raíz é menor do que a informação armazenada no Nó apontado pela raíz.
+ - A informação de cada nó da subarvore direita de R é maior que a informação armazenada no nó apontado pela raíz.
+ - As subárvores esquerda e direita do nó apontado pela raíz também são arvores binárias de busca.
+ * Ou seja, uma árvore binária de busca também utiliza do conceito recursivo da árvore binária.
+

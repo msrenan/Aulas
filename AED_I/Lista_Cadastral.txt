@@ -1,0 +1,19 @@
+É uma estrutura de armazenamento cuja inserção e retirada não ocorre em relação à posição do elemento, mas sim em relação ao seu
+valor.
+
+Funcionalidade x Técnica de aplicação
+Técnica: Lista encadeada
+Funcionalidade: Lista cadastral
+NÃO CONFUNDIR
+
+Operações elementares:
+ - estaNaLista(X) -> bool
+ - insere(X) -> bool
+ - retira(X) -> bool
+ - vazia() -> bool
+ - cheia() -> bool
+ - cria() -> Lista Cadastral
+ - getFirst(&Elemento) -> bool
+ - getNext(&Elemento) -> bool
+
+
