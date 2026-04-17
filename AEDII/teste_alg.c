@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "algoritmos/quicksort.h"
+#include "algoritmos/mergesort.h"
 #include "estruturas/vetor.h"
 #include "random.h"
 
@@ -10,7 +10,7 @@ int main() {
 
     mostra_vec(*v, 0, v->size - 1);
 
-    quick_sort(v);
+    merge_sort(v);
 
     printf("---------------\n");
 

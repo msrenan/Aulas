@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include "../random.h"
 
 struct Node {
     int value;
@@ -161,6 +162,10 @@ void mostra_node(struct Node n) {
     if (n.next != NULL) next = true;
     if (n.prev != NULL) prev = true;
     printf("{ Value:%d Index:%d Next?:%d Prev?:%d }\n", n.value, n.index, next, prev);
+}
+
+void setElement(struct Node* n, int x) {
+    n->value = x;
 }
 
 void troca(struct Node* a, struct Node* b) {
