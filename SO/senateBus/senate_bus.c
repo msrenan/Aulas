@@ -17,12 +17,12 @@ que chegaram enquanto o ônibus estava sendo preenchido.
 Quando o ônibus chega na estação, as threads dos passageiros devem ser acordadas e devem embarcar no ônibus.
 Usar um semáforo para indicar que o ônibus está sendo preenchido. Usar outro semáforo que indica a capacidade
 atual do ônibus. Se a capacidade do ônibus for totalmente preenchida, os passageiros sobressalentes devem 
-continuar esperando na estação, e o ônibus sai em sua rota.
+continuar esperando na estação, e o ônibus sai em sua rota. Usar outro semáforo que indica se o ônibus está
+pronto para sair, seja porque todos que estavam na estação embarcaram, ou porque lotou sua capacidade máxima.
 
 Usar mutexes para acesso em partes de memória compartilhada.
 
 */
-
 #include <stdlib.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -30,5 +30,174 @@ Usar mutexes para acesso em partes de memória compartilhada.
 #include <string.h>
 #include <semaphore.h>
 
+//Gera um sinal que é utilizado para definir quando um novo passageiro chega na rodoviária
 #define NEW_PASSENGER_ARRIVED() (rand() % 2)
+//Gera os IDs de cada passageiro
+#define GEN_ID() (_count + 1) 
+//Gera um tempo aleatório pertencente a [5, 15]
+#define RANDOM_INITIAL_TIME() ((rand() % 15) + 5)
 
+//Constante pra definir quantos passageiros totais circularam no sistema.
+#define MAX_PASS 100
+
+//Mutex para exclusão mutua
+pthread_mutex_t _mutex = PTHREAD_MUTEX_INITIALIZER;
+
+//Barreira para controlar o embarque
+pthread_barrier_t _board_barrier;
+
+//Contador para limitar a quantidade máxima de passageiros e funcionamento de algumas threads
+int _count;
+//Mantém a contagem de quantos passageiros estão esperando na estação.
+int _station;
+
+//Armazena todas as threads dos passageiros
+pthread_t _threads[500];
+
+//Representa o ônibus que armazena os IDs de cada passageiro embarcado.
+int _bus[50];
+
+//Semáforos para controle de embarque e para controle da saída do ônibus
+sem_t _board, _bus_ready;
+
+//Função que embarca passageiros no ônibus. Só é acessada quando o ônibus está na estação e possuí
+//assentos livres para o embarque
+void board(int id, int place) {
+    printf("\033[35mO passageiro %d embarcou no ônibus, no assento %d!\033[0m\n", id, place);
+    //Tranca o mutex para garantir segurança na manipulação do ônibus que é uma variável
+    // comum a todas as threads.
+    pthread_mutex_lock(&_mutex);
+    _bus[place] = id;
+    _station--;
+    pthread_mutex_unlock(&_mutex);
+    //Trava as threads de passageiro até que todos os passageiros que estavam na estação quando o ônibus
+    // chegou embarquem.
+    int status = pthread_barrier_wait(&_board_barrier);
+    //O último passageiro a embarcar gera o sinal que libera o ônibus para sair da estação.
+    if (status == PTHREAD_BARRIER_SERIAL_THREAD) {
+        sem_post(&_bus_ready);
+    }
+}
+
+//Rotina das threads Passageiro, espera o ônibus chegar na estação e então tenta embarcar.
+void * passenger(void * arg) {
+    int id = *(int *) arg;
+    printf("\033[34mO passageiro %d está esperando...\033[0m\n", id);
+    int restante;
+    //Trava cada thread passageiro até que haja espaço no ônibus para elas.
+    sem_wait(&_board);
+    //Se tem espaço, a thread embarca no ônibus imediatamente.
+    board(id, id % 50);
+    pthread_exit(NULL);
+}
+
+//Função que o ônibus executa sempre que está pronto para sair da estação em sua rota, só é executada
+//quando todos os passageiros que estavam na estação no momento da chegada do ônibus embarcam, ou
+//imediatamente se não havia ninguém na estação.
+void depart(int qtd) {
+    printf("\033[33mO ônibus saiu da estação, com %d passageiros!\033[0m\n", qtd);
+    sleep(RANDOM_INITIAL_TIME());
+    int i = 0, count = 0;
+    while (count < qtd) {
+
+        //Adaptação para ler sempre assentos ocupados.
+        if (_bus[i] == 0) {
+            i++;
+            continue;
+        }
+
+        //Trava o mutex para manipular o ônibus sem problemas.
+        pthread_mutex_lock(&_mutex);
+        printf("\033[1;33mO passageiro %d desceu do ônibus\033[0m\n", _bus[i]);
+        _bus[i] = 0;
+        pthread_mutex_unlock(&_mutex);
+        i++;
+        count++;
+        sleep(1);
+    }
+
+    //Se o ônibus não estiver vazio, destrói a barreira para reinicialização
+    // caso contrário, ela não foi inicializada.
+    if (qtd > 0) {
+        pthread_mutex_lock(&_mutex);
+        pthread_barrier_destroy(&_board_barrier);
+        pthread_mutex_unlock(&_mutex);
+    }
+    
+}
+
+//Rotina da thread do ônibus, se tiver passageiros na estação no momento em que ele chegar,
+//espera todos embarcarem e então sai, senão sai imediatamente.
+void * bus(void * args) {
+    int qtd;
+    while (_count < MAX_PASS || _station > 0) {
+        printf("\033[32mO ônibus chegou na estação...\033[0m\n");
+        //Se tiver pessoas na estação, garante que somente essa quantidade de pessoas entre no ônibus
+        // já que o problema especifica que só quem está na estação no momento de chegada do ônibus
+        // pode embarcar nele.
+        if (_station > 0) {
+            printf("\033[32mTem %d passageiros esperando na estação!\033[0m\n", _station);
+            //Variável que será usada para definir quantos passageiros devem sincronizar na barreira.
+            // Se tem menos de 50 pessoas na estção, somente elas devem entrar no ônibus.
+            // Se tem mais de 50 pessoas, só as 50 primeiras entram e o resto espera o próximo busão.
+            qtd = (_station >= 50 ? 50 : _station);
+            //Trava o mutex para garantir manipulação segura da barreira e para reiniciar
+            // o semáforo que contabiliza quantas pessoas devem embarcar no ônibus
+            // sem problemas.
+            pthread_mutex_lock(&_mutex);
+            pthread_barrier_init(&_board_barrier, NULL, qtd);
+            for (int i = 0; i < qtd; i++) {
+                sem_post(&_board);
+            }
+            pthread_mutex_unlock(&_mutex);
+        } else {
+            qtd = 0;
+            sem_post(&_bus_ready);
+            printf("\033[32mNão havia ninguém lá...\033[0m\n");
+        }
+        //Trava a thread até que o ônibus esteja pronto para seguir sua rota, por qualquer motivo que
+        // seja (estação vazia ou todos os passageiros embarcaram).
+        sem_wait(&_bus_ready);
+        depart(qtd);
+    }
+    pthread_exit(NULL);
+}
+
+//Função principal, thread principal, representando a própria estação, onde os passageiros que estão
+//a espera do ônibus e o próprio ônibus se encontram.
+int main() {
+    //Inicialização de variáveis de controle populacional
+    _count = 0;
+    _station = 0;
+
+    //Inicialização dos semáforos
+    sem_init(&_board, 0, 0);
+    sem_init(&_bus_ready, 0, 1);
+
+    //Inicialização da thread do ônibus.
+    pthread_t bus_t;
+    pthread_create(&bus_t, NULL, bus, NULL);
+
+    //Loop principal de execução da estação.
+    int pass_id;
+    printf("\033[1;31mMais um dia começa na estação!\033[0m\n");
+    while (_count < MAX_PASS) {
+        if (NEW_PASSENGER_ARRIVED()) {
+            pass_id = GEN_ID();
+
+            pthread_create(&_threads[_count], NULL, passenger, &pass_id);
+
+            pthread_mutex_lock(&_mutex);
+            _count++;
+            _station++;
+            pthread_mutex_unlock(&_mutex);
+        }
+        sleep(1);
+    }
+    printf("\033[1;31mÉ o fim do dia na estação.\033[0m\n");
+
+    pthread_join(bus_t, NULL);
+
+    sem_destroy(&_board);
+    sem_destroy(&_bus_ready);
+}
