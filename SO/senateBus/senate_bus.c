@@ -29,6 +29,7 @@ Usar mutexes para acesso em partes de memória compartilhada.
 #include <unistd.h>
 #include <string.h>
 #include <semaphore.h>
+#include <time.h>
 
 //Gera um sinal que é utilizado para definir quando um novo passageiro chega na rodoviária
 #define NEW_PASSENGER_ARRIVED() (rand() % 2)
@@ -38,7 +39,7 @@ Usar mutexes para acesso em partes de memória compartilhada.
 #define RANDOM_INITIAL_TIME() ((rand() % 15) + 5)
 
 //Constante pra definir quantos passageiros totais circularam no sistema.
-#define MAX_PASS 100
+#define MAX_PASS 500
 
 //Mutex para exclusão mutua
 pthread_mutex_t _mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -60,10 +61,18 @@ int _bus[50];
 //Semáforos para controle de embarque e para controle da saída do ônibus
 sem_t _board, _bus_ready;
 
+struct tm* get_current_time() {
+    time_t t = time(NULL);
+    struct tm *tm_info = localtime(&t);
+
+    return tm_info;
+}
+
 //Função que embarca passageiros no ônibus. Só é acessada quando o ônibus está na estação e possuí
 //assentos livres para o embarque
 void board(int id, int place) {
-    printf("\033[35mO passageiro %d embarcou no ônibus, no assento %d!\033[0m\n", id, place);
+    struct tm *curr = get_current_time();
+    printf("\033[35m[%d:%d:%d - PASSAGEIRO %d] Embarcou no ônibus, no assento %d!\033[0m\n",curr->tm_hour, curr->tm_min, curr->tm_sec, id, place);
     //Tranca o mutex para garantir segurança na manipulação do ônibus que é uma variável
     // comum a todas as threads.
     pthread_mutex_lock(&_mutex);
@@ -75,6 +84,7 @@ void board(int id, int place) {
     int status = pthread_barrier_wait(&_board_barrier);
     //O último passageiro a embarcar gera o sinal que libera o ônibus para sair da estação.
     if (status == PTHREAD_BARRIER_SERIAL_THREAD) {
+        sleep(1);
         sem_post(&_bus_ready);
     }
 }
@@ -82,7 +92,8 @@ void board(int id, int place) {
 //Rotina das threads Passageiro, espera o ônibus chegar na estação e então tenta embarcar.
 void * passenger(void * arg) {
     int id = *(int *) arg;
-    printf("\033[34mO passageiro %d está esperando...\033[0m\n", id);
+    struct tm *curr = get_current_time();
+    printf("\033[34m[%d:%d:%d - PASSAGEIRO %d] Está esperando...\033[0m\n",curr->tm_hour, curr->tm_min, curr->tm_sec, id);
     int restante;
     //Trava cada thread passageiro até que haja espaço no ônibus para elas.
     sem_wait(&_board);
@@ -95,8 +106,9 @@ void * passenger(void * arg) {
 //quando todos os passageiros que estavam na estação no momento da chegada do ônibus embarcam, ou
 //imediatamente se não havia ninguém na estação.
 void depart(int qtd) {
-    printf("\033[33mO ônibus saiu da estação, com %d passageiros!\033[0m\n", qtd);
-    sleep(RANDOM_INITIAL_TIME());
+    struct tm *curr = get_current_time();
+    printf("\033[33m[%d:%d:%d - ÔNIBUS] Saiu da estação, com %d passageiros!\033[0m\n",curr->tm_hour, curr->tm_min, curr->tm_sec, qtd);
+    sleep(RANDOM_INITIAL_TIME() + 15);
     int i = 0, count = 0;
     while (count < qtd) {
 
@@ -108,7 +120,8 @@ void depart(int qtd) {
 
         //Trava o mutex para manipular o ônibus sem problemas.
         pthread_mutex_lock(&_mutex);
-        printf("\033[1;33mO passageiro %d desceu do ônibus\033[0m\n", _bus[i]);
+        struct tm *curr = get_current_time();
+        printf("\033[1;33m[%d:%d:%d - ÔNIBUS] O passageiro %d desceu do ônibus\033[0m\n",curr->tm_hour, curr->tm_min, curr->tm_sec, _bus[i]);
         _bus[i] = 0;
         pthread_mutex_unlock(&_mutex);
         i++;
@@ -131,12 +144,14 @@ void depart(int qtd) {
 void * bus(void * args) {
     int qtd;
     while (_count < MAX_PASS || _station > 0) {
-        printf("\033[32mO ônibus chegou na estação...\033[0m\n");
+        struct tm *curr = get_current_time();
+        printf("\033[32m[%d:%d:%d - ÔNIBUS] Chegou na estação...\033[0m\n", curr->tm_hour, curr->tm_min, curr->tm_sec);
         //Se tiver pessoas na estação, garante que somente essa quantidade de pessoas entre no ônibus
         // já que o problema especifica que só quem está na estação no momento de chegada do ônibus
         // pode embarcar nele.
         if (_station > 0) {
-            printf("\033[32mTem %d passageiros esperando na estação!\033[0m\n", _station);
+            struct tm *curr = get_current_time();
+            printf("\033[1;31m[%d:%d:%d - ESTAÇÃO] Tem %d passageiros esperando na estação!\033[0m\n",curr->tm_hour, curr->tm_min, curr->tm_sec, _station);
             //Variável que será usada para definir quantos passageiros devem sincronizar na barreira.
             // Se tem menos de 50 pessoas na estção, somente elas devem entrar no ônibus.
             // Se tem mais de 50 pessoas, só as 50 primeiras entram e o resto espera o próximo busão.
@@ -153,7 +168,8 @@ void * bus(void * args) {
         } else {
             qtd = 0;
             sem_post(&_bus_ready);
-            printf("\033[32mNão havia ninguém lá...\033[0m\n");
+            struct tm *curr = get_current_time();
+            printf("\033[1;31m[%d:%d:%d - ESTAÇÃO] Não havia ninguém lá...\033[0m\n", curr->tm_hour, curr->tm_min, curr->tm_sec);
         }
         //Trava a thread até que o ônibus esteja pronto para seguir sua rota, por qualquer motivo que
         // seja (estação vazia ou todos os passageiros embarcaram).
@@ -180,9 +196,10 @@ int main() {
 
     //Loop principal de execução da estação.
     int pass_id;
-    printf("\033[1;31mMais um dia começa na estação!\033[0m\n");
+    struct tm *curr = get_current_time();
+    printf("\033[1;31m[%d:%d:%d - ESTAÇÃO] Mais um dia começa na estação!\033[0m\n", curr->tm_hour, curr->tm_min, curr->tm_sec);
     while (_count < MAX_PASS) {
-        if (NEW_PASSENGER_ARRIVED()) {
+        if (NEW_PASSENGER_ARRIVED() || 1) {
             pass_id = GEN_ID();
 
             pthread_create(&_threads[_count], NULL, passenger, &pass_id);
@@ -194,9 +211,14 @@ int main() {
         }
         sleep(1);
     }
-    printf("\033[1;31mÉ o fim do dia na estação.\033[0m\n");
+    curr = get_current_time();
+    printf("\033[1;31m[%d:%d:%d - ESTAÇÃO]É o fim do dia na estação.\033[0m\n", curr->tm_hour, curr->tm_min, curr->tm_sec);
 
     pthread_join(bus_t, NULL);
+
+    curr = get_current_time();
+    printf("\033[32m[%d:%d:%d - ÔNIBUS] Terminou o último percurso\033[0m\n", curr->tm_hour, curr->tm_min, curr->tm_sec);
+
 
     sem_destroy(&_board);
     sem_destroy(&_bus_ready);
