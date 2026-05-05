@@ -20,8 +20,23 @@
               "icon": "lucide-file",
               "title": "Revisão P1"
             }
+          },
+          {
+            "id": "ffc74aad5f9e0a19",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "SO/Lista 1 - SO.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Lista 1 - SO"
+            }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -183,8 +198,10 @@
       "bases:Criar nova base": false
     }
   },
-  "active": "b2df356850c6c8e7",
+  "active": "ffc74aad5f9e0a19",
   "lastOpenFiles": [
+    "SO/Revisão P1.md",
+    "SO/Lista 1 - SO.md",
     "SO/Aula (30.03).md",
     "SO/Aula (27.04).md",
     "SO/Aula (25.03).md",
@@ -195,11 +212,9 @@
     "SO/Aula (08.04).md",
     "SO/Aula (06.04).md",
     "SO/Aula (01.04).md",
-    "SO/Revisão P1.md",
     "PATOS/Aulão - Load Balancing e Firewall Userspace.md",
     "PATOS/Aulão - HTTP (08.04).md",
     "PATOS/Aulão - História da net e cloud - 30.03.md",
-    "Sem título.md",
     "images/Pasted image 20260422114327.png",
     "images/Pasted image 20260422111244.png",
     "images/Pasted image 20260422111258.png",
