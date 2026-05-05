@@ -1,0 +1,1 @@
+\[Lab na aula normal - {}]
