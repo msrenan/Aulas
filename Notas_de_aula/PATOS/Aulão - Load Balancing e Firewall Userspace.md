@@ -9,7 +9,7 @@
 - E o psel?
 
 ## O problema e a solução
-Bom, então vamos começar a entender o que é um Load Balancer. Imagine o seguinte problema: Eu tenho um servidor que consegue processar, teróricamente, 30 requisições ao mesmo tempo. Contudo, na prática, quando meu servidor recebe 20 requisições, ele já começa a apresentar lentidão. 
+Bom, então vamos começar a entender o que é um Load Balancer. Imagine o seguinte problema: Eu tenho um servidor que consegue processar, teoricamente, 30 requisições ao mesmo tempo. Contudo, na prática, quando meu servidor recebe 20 requisições, ele já começa a apresentar lentidão. 
 
 Uma das soluções possíveis pra esse problema, seria comprar mais 4 servidores que processam 30 requisições cada ao mesmo tempo, e dividir os visitantes dos sites entre os 5 servidores. Mas aí surge outro problema, desse modo, teríamos que ter 5 sites diferentes para cada servidor. Então surge o problema principal: **Como distribuir as conexões de cada cliente para os 5 servidores, fazendo com que eles acessem só um site?**
 
