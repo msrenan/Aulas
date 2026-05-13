@@ -17,7 +17,7 @@
 17. OK
 18. OK
 19. OK
-20. OK
+20. Diferencie as chamadas **fork()** e **vfork()**. Resposta: A chamada `fork()` usada para criar um processo filho, faz com que todo o task_struct as áreas de endereçamento de um processo pai sejam **copiadas** para o processo filho, um processo custoso (hoje em dia, uma otimização foi feita, o *CoW* - Copy on Write: as áreas de endereçamento do processo pai só são copiadas para o processo filho se um dos dois processos for fazer uma modificação nela, caso contrario, as áreas de memória do filho apontam para as do pai.) Já a chamada `vfork()` é uma chamada otimizada, usada quando um processo filho usa o `exec()` logo após sua criação (e sabendo que a chamada `exec()` descarta as áreas de memória atuais de um processo para criar novas áreas para o programa que será executado, não fazia sentido todo o processo de cópia do processo pai para o filho). Assim, um processo filho criado usando `vfork()` tem no lugar de suas áreas de memória um ponteiro para as áreas de memória do pai, que para evitar conflitos de IPC, fica paralisado até que o filho deixe de utilizar as suas áreas de memória, ou seja: até que o filho execute o `exec()` ou termine sua execução com `exit()`.
 21. OK
 22. OK
 23. OK

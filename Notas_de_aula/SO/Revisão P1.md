@@ -167,7 +167,4 @@ O recebimento **efetivo** de um sinal só ocorre durante a restauração de cont
 
 **As únicas exceções para o processo mencionado acima são o SIGKILL e o SIGSTOP, que são tratados imediatamente no envio, ou seja, o processo não tem que receber eles para que eles sejam tratados (e isso significa que quem trata eles é o kernel, *ainda no anel de privilégio 0* - e por isso eles não precisam ser entregues, já que quando o SO volta para o user mode - momento em que os sinais seriam entregues ao programa - eles já foram processados.**
 
-
-
-
 ---
