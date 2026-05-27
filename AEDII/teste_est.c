@@ -1,39 +1,24 @@
 #include <stdio.h>
-#include "estruturas/vetor.h"
+#include "estruturas/hashtable.c"
 
 int main() {
-    struct Vec* v = newVec();
+    
+    init(10);
+    printf("HashTable initialized.\n");
+    char* k = malloc(10 * sizeof(char));
+    k = "teste";
+    printf("Inserting key teste.\n");
+    insert(k, 10);
+    printf("Inserted value 10.\n");
+    k = "bro";
+    printf("Inserted key bro.\n");
+    insert(k, 0);
+    printf("Inserted value 0.\n");
 
-    push(v, 1);
-    push(v, 2);
-    push(v, 3);
-    push(v, 4);
-    push(v, 5);
+    printf("Insertion done!\n");
 
-    mostra_vec(*v);
+    printf("teste -> %d\n", search("teste"));
+    printf("bro -> %d\n", search("bro"));
 
-    int r;
-    pop(v, &r);
-
-    printf("Removed: %d\n", r);
-
-    mostra_vec(*v);
-
-    remove_pos(v, 1, &r);
-
-    printf("Removed: %d\n", r);
-
-    mostra_vec(*v);
-
-    troca(getNode(v, 0), getNode(v, v->size - 1));
-
-    printf("Element #1: %d\n", getElement(v, 1));
-
-    mostra_vec(*v);
-
-    struct Node* n = getNode(v, 0);
-
-    mostra_node(*n);
-
-    delVec(v);
+    
 }
