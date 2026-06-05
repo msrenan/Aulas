@@ -34,9 +34,23 @@
               "icon": "lucide-file",
               "title": "Aula (27.05)"
             }
+          },
+          {
+            "id": "cb82fabb72a2a395",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Aula (01.06).md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Aula (01.06)"
+            }
           }
         ],
-        "currentTab": 1
+        "currentTab": 2
       }
     ],
     "direction": "vertical"
@@ -198,10 +212,11 @@
       "bases:Criar nova base": false
     }
   },
-  "active": "b2df356850c6c8e7",
+  "active": "cb82fabb72a2a395",
   "lastOpenFiles": [
-    "PATOS/Aulão - Load Balancing e Firewall Userspace.md",
     "SO/Aula (27.05).md",
+    "Aula (01.06).md",
+    "PATOS/Aulão - Load Balancing e Firewall Userspace.md",
     "ORI/Revisão P2 ORI.md",
     "ORI/Aula introdutória.md",
     "SO/Aula (20.05).md",
@@ -235,7 +250,6 @@
     "images/Pasted image 20260413092148.png",
     "ORI/Aula 24.03 File Manip..md",
     "PATOS",
-    "2026-03-24.md",
     "SO",
     "ORI"
   ]
