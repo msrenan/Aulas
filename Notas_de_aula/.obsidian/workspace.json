@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "eb4d1845efea9f59",
+        "id": "ada834949acda508",
         "type": "tabs",
         "children": [
           {
-            "id": "c1a8a8ce6f720b55",
+            "id": "74b65134da9c7ae8",
             "type": "leaf",
             "state": {
               "type": "markdown",
@@ -78,8 +78,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200,
-    "collapsed": true
+    "width": 200
   },
   "right": {
     "id": "9ff911c654d06c45",
@@ -184,10 +183,10 @@
       "bases:Criar nova base": false
     }
   },
-  "active": "c1a8a8ce6f720b55",
+  "active": "74b65134da9c7ae8",
   "lastOpenFiles": [
-    "SO/Revisão P1.md",
     "SO/Revisão P2.md",
+    "SO/Revisão P1.md",
     "PATOS/Aulão - Load Balancing e Firewall Userspace.md",
     "SO/Aula (27.05).md",
     "SO/Aula (01.06).md",

@@ -150,27 +150,103 @@ Arquivos, internamente, podem ser organizados em:
 - **Sequência de registros**: nesta organização, o arquivo é dividido em *registros de tamanho fixo*, o que significa que, por exemplo, cada linha representa um registro. Para que este tipo de organização funcione, é necessário que a operação de escrita **adicione ou sobreponha um registro**, e a de leitura **retorne um registro em uma posição especificada**. É uma organização muito usada em banco de dados pois facilita a manipulação de uma estrutura fixa de dados.
 - **Árvore de registros**: nesta organização, o arquivo em si representa uma *árvore de registro de tamanhos variados*, o que significa que toda a manipulação de dados deste tipo de arquivo é feita utilizando a árvore que ele representa. Este, também é muito utilizado em bancos de dados, já que essa organização acelera muito a busca, inserção e remoção de registros dentro do arquivo.
 
-Existem alguns tipos comuns de arquivo - *tipos esses diferentes do tipo que é sinalizado pela extensão de um arquivo* - vamos entendê-los:
+Existem alguns tipos comuns de arquivo - *tipos esses diferentes do tipo que é sinalizado pela extensão de um arquivo, relacionados à estruturação interna* - vamos entendê-los:
 - **Arquivo comum/executável**: Contém um cabeçalho que possuí: o magic number, algumas métricas e o um ponteiro para o início da seção de dados, além de algumas flags e fora do cabeçalho, existem a seção de texto, de dados, entre outras.
-- **Repositório (arquivo compactado, biblioteca, etc)**: Contém vários cabeçalhos contendo o nome do objeto, sua data de criação, proprietário, permissões e por fim, logo após o fim do cabeçalho, um ponteiro que aponta para o objeto em si, que pode ser um arquivo, outro repositório, etc.
+- **Diretório**: Contém vários cabeçalhos contendo o nome dos arquivos contidos em si, suas datas de criação, proprietários, permissões e por fim, logo após o fim do cabeçalho de cada arquivo, um ponteiro que aponta para o endereço do primeiro bloco do arquivo em si.
 
-Certo, agora que entendemos o que é um arquivo, vamos entender **o que é um sistema de arquivos**.
+Entendemos, então, o que é um arquivo para o SO, e sabemos que os arquivos são unidades lógicas de informação que mapeiam blocos físicos do disco, mas como funciona esse mapeamento? 
+
+#### Tipos de alocação
+
+Dependendo do SO, o jeito que se decide quais blocos de disco vão ser alocados para cada arquivo pode variar, vamos entender os principais:
+- **Alocação Contígua**: Consiste em armazenar cada arquivo como uma execução contígua de blocos de disco, ou seja *um do lado do outro*. É o tipo de alocação mais simples de ser implementado, pois basta saber o endereço do primeiro bloco e o número de blocos daquele arquivo para se obter o arquivo completo, e sabendo o número do primeiro bloco é possível descobrir qualquer outro bloco utilizando simples adições. É uma alocação extremamente eficiente para a **leitura**, pois basta buscar o bloco **uma vez** para lê-lo completamente. A desvantagem dessa alocação, é que o disco pode ficar **fragmentado** - isto é, com lacunas entre dois blocos - caso um arquivo que se encontra no meio de outros 2 (no ponto de vista dos blocos no disco) seja deletado.
+- **Alocação por lista encadeada**: Consiste em manter cada arquivo como uma lista encadeada de blocos de disco. Para tanto, o início de cada bloco de disco é usado como um ponteiro para o próximo bloco. Diferente da alocação contígua, não existe fragmentação de disco nesse caso, pois sempre que um espaço ficar vago, outro arquivo pode preenchê-lo com um de seus blocos. Contudo, a facilidade para se encontrar qualquer bloco é perdida aqui, já que é preciso buscar no disco todo pelo primeiro bloco do arquivo desejado.
+- **Alocação por lista encadeada utilizando uma tabela na memória**: Consiste em uma otimização da *alocação por lista encadeada*. visando eliminar o acesso aleatório de extrema lentidão, a ideia aqui é colocar o ponteiro de cada bloco em uma **tabela de ponteiros** armazenada em memória RAM, tornando o acesso aleatório é facilitado. Essa tabela, chamada de **FAT (File Allocation Table)**, é uma otimização considerável, mas apresenta uma desvantagem principal: *a tabela inteira deve estar carregada em memória RAM, a **todo momento**, para que este método funcione*.
+- **I-nodes**: Um método semelhante ao supracitado, porém resolvendo sua principal desvantagem. Falaremos dele quando estivermos estudando a **estrutura do sistema de arquivos.**
+
+Certo, agora que entendemos o que é um arquivo e como um arquivo se associa com o disco, vamos entender **o que é um sistema de arquivos**.
 
 ## Sistema de arquivos
 
 Vamos destrinchar a fundo qual é o propósito do sistema de arquivos para um SO e vamos entender como é essa tecnologia que **torna possível a manipulação e gerenciamento de arquivos do jeito que conhecemos.**
 
-Para começar, vamos discutir sobre a função do sistema de arquivos. Sua função é ser uma **abstração** para as interações do SO com o disco.
+Para começar, vamos discutir sobre a função do sistema de arquivos. Sua função é ser uma **abstração** para as interações do SO com o disco. Essa interação que o SO vai fazer pode ser apenas de 2 tipos:
+- **Leitura**: O SO deseja ler o conteúdo de um arquivo armazenado no hardware de memória secundária. Cabe ao sistema de arquivos receber esse pedido, e interagir com o driver do hardware em nome do SO.
+- **Escrita**: O SO deseja gravar uma informação da memória primária para a memória persistente. Cabe ao sistema de arquivos receber esse pedido, e interagir com o driver do hardware em nome do SO.
 
+Beleza, sabemos então que o Sistema de Arquivos vai abstrair o pedido do SO para o device driver. É só isso que ele faz? **Não.** Enquanto entendíamos como os dispositivos de hardware (HDD ou SSD) funcionavam, nós aprendemos que *o hardware possuí uma divisão física que proporcionava a **tradução de endereços lógicos** em endereços físicos*, mas até então, nunca havíamos parado pra pensar "De onde vêm esses endereços lógicos?", bem a resposta é simples: **do sistema de arquivos**. Para entender como isso funciona, devemos entender primeiro a **organização do sistema de arquivos**.
 
+### Estrutura Interna do SA (Sistema de Arquivos)
+
+Sabemos que um disco pode ser **particionado**, e como vimos anteriormente, cada partição permite o **isolamento** de dados e **sistemas de arquivos inteiros**. Vamos começar deste ponto. Um disco, contém, obrigatoriamente, uma partição especial correspondente ao Setor 0 do disco, chamada *MBR - Master Boot Record* - e é a partição utilizada para inicializar o computador, contendo um gerenciador de boot do próprio disco e uma **tabela de partições** - para que o disco saiba, assim que inicializar, quais blocos estão dentro de cada partição. 
+
+Então, logo após a tabela de partições, começam as partições normais de um disco, em que, cada uma representa **obrigatoriamente**, um sistema de arquivos diferente - **independente desse SA estar associado a um SO diferente ou não.**  As partições normais, são subdividias, na grande maioria das vezes em:
+- **Bloco de inicialização**: Contém o código do **bootloader**, que é responsável por carregar o sistema operacional.
+- **Superbloco:** Contém parâmetros-chave a respeito do sistema de arquivos e é lido para a memória RAM assim que o computador é inciado, ou quando o sistema de arquivos é **montado**.
+- **Gerenciamento de espaço livre**: Contém informações a respeito dos blocos de disco mapeados no sistema de arquivos na forma de *bitmaps* ou uma *lista de ponteiros*.
+- **I-nodes**: Contém uma lista com **todos** os **I-nodes** registrados no SA. (Daremos ênfase em **o que é um i-node e qual sua importância**, em breve).
+- **Diretório-raiz**: Contém o ponteiro para o **i-node** do diretório raiz do sistema de arquivos (no universo UNIX, é o famoso: "/")
+- **Arquivos e diretórios**: Contém toda a árvore de **i-nodes** que mapeiam a estrutura hierárquica de pastas e arquivos. *Árvore essa cuja raiz é o diretório "/".*
+
+É chegada a hora então de entendermos, finalmente, **o que é um I-node**.
+
+#### I-nodes
+
+É o **tipo de alocação** de arquivo mais otimizado atualmente, em que cada bloco de um arquivo é associado a um *i-node (index-node)*, que lista os atributos e os endereços de disco dos blocos referentes ao arquivo desejado. Se você possuí o i-node de um arquivo, é possível encontrar **todos os blocos daquele arquivo**. A vantagem do esquema de i-nodes sobre a *lista encadeada tabelada em RAM* é que o **i-node de um arquivo só precisa estar carregado em memória quando o arquivo *está aberto***. Um problema envolvendo os i-nodes, é que o número de endereços que ele comporta é fixo, e caso um arquivo ultrapasse esse número de blocos de disco, a solução é reservar o último espaço de endereço de disco para que ele armazene o endereço de um bloco que contém o resto dos endereços do arquivo que não couberam no i-node.
+
+Certo, agora que sabemos o que é um **i-node** e entendemos qual a relação dessa estrutura com **arquivos**, precisamos entender qual é a relação dessa estrutura com **diretórios**.
+
+Normalmente, se não utilizarmos i-node, um diretório precisaria manter os **atributos** de cada arquivo dentro dele no **cabeçalho do arquivo** presente no ponto de entrada do diretório. Utilizando i-nodes, basta que o diretório guarde o **nome do arquivo** e o **ponteiro para o i-node do arquivo**, que conterá todas as informações de atributos e endereços de blocos de disco. A pergunta natural a se fazer agora é *como é armazenado esse ponto de entrada de um diretório?*, a resposta você já sabe: **em um i-node**. Ao invés de conter os atributos do arquivo e um ponteiro para os blocos de disco do arquivo, um i-node que representa um **diretório**, contém atributos do diretório e **ponteiros apontando para cada i-node dos arquivos de dentro daquele diretório.**
+
+Isso faz com que a estrutura do sistema de arquivos se pareça com esse diagrama:
+```mermaid
+flowchart TB
+
+root["/"]
+A["User A"]
+B["User B"]
+C["User C"]
+
+P1["Pasta 1"]
+A1["Arquivo 1"]
+A2["Arquivo 2"]
+
+root --> A
+root --> B
+root --> C
+
+B --> P1
+P1 --> A1
+P1 --> A2
+```
+ Em que cada nó do diagrama representa um **i-node**.
+
+Dessa forma, entendemos como se estrutura um **Sistema de Arquivos**. Entendemos também como ele organiza a **hierarquia de pastas e diretórios** usando i-nodes. Mas ainda faltam responder algumas perguntas.
+
+## Se existem diferentes tipos de sistema de arquivos, como o SO consegue executar a mesma operação em todos eles?
+
+Os diferentes tipos de sistema de arquivos variam na ordem que as informações são armazenadas, nos atributos dos i-nodes, na hierarquia de pastas e entre muitas outras coisas. **Como o SO sabe se comunicar com todos os diferentes tipos de SA?** A resposta é bem simples: **Virtual File System - VFS.**
+
+O SO utiliza um Sistema de Arquivos Virtual para fazer os seus pedidos de *leitura e escrita*. O que ele faz, é pedir a leitura/escrita para o VFS, que nada mais é do que uma **API** que padroniza funções padrões de **read()** e **write()**, que devem existir para **TODOS** os sistemas de arquivos. Na prática, o que o SO faz é algo parecido com: `ext4.vfs.read()` ou `vfat.vfs.read()`.
+
+## Os endereços armazenados em um i-node, são os endereços físicos dos blocos no disco?
+
+A resposta é **NÃO!** Os endereços armazenados em um sistema de arquivos são **endereços lógicos** que são traduzidos para **endereços físicos** pelo **controlador de disco**. Quanto o SO pede para abrir um arquivo, ele passa o **caminho do arquivo** (lista com o nome de todos os diretórios necessários para chegar no i-node do arquivo, desde a **raiz do sistema de arquivos**) para o SA, que por sua vez vai acessar todos os diretórios - seguindo o caminho fornecido - até chegar no arquivo (caso seja o caminho errado, retorna erro), então consulta os i-nodes para pegar os **endereços LÓGICOS dos blocos de disco** que contenham a informação que o SO quer acessar, envia esses endereços obtidos para a **camada de blocos**, que organiza os endereços para rearranjar a ordem de leitura para uma leitura otimizada e, finalmente, envia os endereços rearranjados para o driver de disco realizar a interação física.
+
+## O que significa "montar um sistema de arquivos"?
+
+Quando você cria uma partição de disco e insere um sistema de arquivos nela, o SA não fica **imediatamente** pronto para uso. É preciso montá-lo primeiro. A montagem de um sistema de arquivos acontece durante a inicialização da máquina, também.
+
+Ao iniciar o processo de montagem, o kernel lê o superbloco daquela partição para salvar em memória RAM atributos essenciais do sistema de arquivos que está sendo montado. Depois disso, o kernel guarda o endereço do diretório-raiz do SA - e em caso de montagem de um SA fora da inicialização, define o diretório raiz do SA2 como sendo a pasta do SA1 que você indicou ao iniciar o processo de montagem - e assim a montagem se dá por concluída.
+
+**"E a árvore de i-nodes? Não é iniciada junto na montagem?"**
+**NÃO!** Isso por que seria um desperdício de tempo preencher **TODA** a árvore de i-nodes direto na montagem do SA. O que ocorre é um preenchimento gradual **sob demanda**. A árvore só é preenchida na primeira vez que tentam acessar aquele caminho. Caso contrário, os **i-nodes não visitados NUNCA entram na subdivisão de Arquivos e Diretórios.** Por isso que acessar um arquivo na segunda vez é mais rápido que na primeira: quando você acessa pela primeira vez, você está pavimentando a estrada. Na segunda vez, com a estrada já pavimentada, é só ir direto no arquivo.
+
+Agora sim, podemos dizer que **entendemos** como o Linux gerencia arquivos. Mas você pode estar se perguntando: "E aquela comunicação entre o SO e os device drivers, como funcionam?", esse é nosso próximo tópico de estudo.
 
 ---
 
 # Entrada e Saída de Dados (Device Drivers)
-
----
-
-# Um pouco sobre o kernel
 
 ---
 
