@@ -22,7 +22,7 @@ Agora, pensando no SO, o Disco é dividido de maneira **lógica** em:
 - **Bloco**: Grupo de setores, que somados totalizam um tamanho X, sendo esse tamanho X a menor unidade utilizada pelo SO para ler e gravar arquivos. Geralmente, um bloco tem o tamanho de uma **página virtual de memória**, para que seja facilitada o carregamento dos dados lidos da memória secundária para a memória primária.
 - **Partições**: Divisão primária do Disco, delimitando onde começa e termina cada sistema de arquivos gravado e definido para aquele hardware, permitindo o isolamento de dados e sistemas inteiros.
 
-> OBS: existe uma cabeça de leitura/gravação **por disco**, e todas se movem **juntas** para a mesma posição. Não é possível mover apenas uma cabeça de maneira independente.
+> OBS: existe duas cabeça de leitura/gravação **por disco**, e todas se movem **juntas** para a mesma posição. Não é possível mover apenas uma cabeça de maneira independente.
 
 #### Fluxo básico de leitura/escrita
 ```mermaid
@@ -122,7 +122,7 @@ Essas perguntas são essenciais para entendermos como o SO lê e grava informaç
 
 Então, os SO mandam a requisição para os drivers de disco, que traduzem o endereço lógico em físico e manipulam seus respectivos hardwares, baseados na requisição feita pelo SO, executam a operação e retornam para o SO, ou uma confirmação - no caso da escrita - ou os dados requisitados - no caso da leitura.
 
-> OBS: Os device drivers pedem o **endereço na RAM** na requisição pois são capazes de realizar *Direct Acess to Memory* (DMA), na memória RAM, podendo escrever ou ler conteúdos da **RAM** sem o intermédio do SO.
+> OBS: Os controladores de disco pedem o **endereço na RAM** na requisição pois são capazes de realizar *Direct Acess to Memory* (DMA), na memória RAM, podendo escrever ou ler conteúdos da **RAM** sem o intermédio do SO ou da CPU.
 
 Isso responde nossa primeira pergunta: `'Como o SO pede as informações para o hardware?'`: O SO envia uma requisição contendo o endereço de memória lógico dos dados que serão manipulados, indicando qual operação será realizada (leitura ou escrita), indicando quantos bytes serão manipulados e o onde na RAM devem ser colocados os dados, em caso de leitura, ou, de onde na RAM devem ser retirados os dados, em caso de gravação. Uma vez enviada a requisição, o driver verifica a memória RAM da máquina, para ajeitar o espaço para inserir informações em caso de leitura ou para checar as informações já existentes,em caso de escrita, depois realiza a tradução do endereço lógico do **sistema de arquivos** em um endereço físico para o hardware de memória secundária, realiza os procedimentos necessários pré-operação (que divergem dependendo do tipo de hardware SSD ou HDD) e, finalmente, realiza a operação da requisição. Uma vez finalizada a operação, o driver sinaliza para a CPU que finalizou a operação requisitada pelo SO e uma interrupção é gerada para que o SO lide com a finalização da operação.
 
@@ -178,7 +178,7 @@ Beleza, sabemos então que o Sistema de Arquivos vai abstrair o pedido do SO par
 
 ### Estrutura Interna do SA (Sistema de Arquivos)
 
-Sabemos que um disco pode ser **particionado**, e como vimos anteriormente, cada partição permite o **isolamento** de dados e **sistemas de arquivos inteiros**. Vamos começar deste ponto. Um disco, contém, obrigatoriamente, uma partição especial correspondente ao Setor 0 do disco, chamada *MBR - Master Boot Record* - e é a partição utilizada para inicializar o computador, contendo um gerenciador de boot do próprio disco e uma **tabela de partições** - para que o disco saiba, assim que inicializar, quais blocos estão dentro de cada partição. 
+Sabemos que um disco pode ser **particionado**, e como vimos anteriormente, cada partição permite o **isolamento** de dados e **sistemas de arquivos inteiros**. Vamos começar deste ponto. Um disco, contém, obrigatoriamente, *MBR - Master Boot Record* - correspondendo ao **Setor 0 do disco**, com exatos 512 bytes, contendo um gerenciador de boot do próprio disco e uma **tabela de partições** - para que o disco saiba, assim que inicializar, quais blocos estão dentro de cada partição. 
 
 Então, logo após a tabela de partições, começam as partições normais de um disco, em que, cada uma representa **obrigatoriamente**, um sistema de arquivos diferente - **independente desse SA estar associado a um SO diferente ou não.**  As partições normais, são subdividias, na grande maioria das vezes em:
 - **Bloco de inicialização**: Contém o código do **bootloader**, que é responsável por carregar o sistema operacional.
@@ -239,15 +239,167 @@ Quando você cria uma partição de disco e insere um sistema de arquivos nela, 
 
 Ao iniciar o processo de montagem, o kernel lê o superbloco daquela partição para salvar em memória RAM atributos essenciais do sistema de arquivos que está sendo montado. Depois disso, o kernel guarda o endereço do diretório-raiz do SA - e em caso de montagem de um SA fora da inicialização, define o diretório raiz do SA2 como sendo a pasta do SA1 que você indicou ao iniciar o processo de montagem - e assim a montagem se dá por concluída.
 
-**"E a árvore de i-nodes? Não é iniciada junto na montagem?"**
+**"E a árvore de i-nodes? Não é iniciada na memória RAM também durante a montagem?"**
 **NÃO!** Isso por que seria um desperdício de tempo preencher **TODA** a árvore de i-nodes direto na montagem do SA. O que ocorre é um preenchimento gradual **sob demanda**. A árvore só é preenchida na primeira vez que tentam acessar aquele caminho. Caso contrário, os **i-nodes não visitados NUNCA entram na subdivisão de Arquivos e Diretórios.** Por isso que acessar um arquivo na segunda vez é mais rápido que na primeira: quando você acessa pela primeira vez, você está pavimentando a estrada. Na segunda vez, com a estrada já pavimentada, é só ir direto no arquivo.
+
+A árvore de todos os i-nodes **sempre** existe em memória secundária. Contudo, o **cache de i-nodes**, não é carregado totalmente preenchido na memória RAM durante a montagem, e é preenchido gradualmente.
 
 Agora sim, podemos dizer que **entendemos** como o Linux gerencia arquivos. Mas você pode estar se perguntando: "E aquela comunicação entre o SO e os device drivers, como funcionam?", esse é nosso próximo tópico de estudo.
 
 ---
 
-# Entrada e Saída de Dados (Device Drivers)
+# Entrada e Saída de Dados
+
+Você já se perguntou **como o SO se comunica com a rede?**, ou então **como o SO se comunica com hardwares externos ao processador, como placa de vídeo, placa de wi-fi, hardwares de memória secundária, mouse, teclado, entre outros?**
+
+Pois bem, isso tudo é possível graças ao **gerenciamento de entrada e saída** realizado pelo SO. Agora que entendemos bem como funciona um sistema de arquivos, podemos entender profundamente como a E/S (Entrada e Saída) funciona, já que **tudo é feito a partir das duas operações fundamentais da manipulação de arquivos: read() (leitura) e write() (escrita)**. Sim, você não entendeu errado, *o SO utiliza o SA para gerenciar a entrada e saída de dados*, já que para receber dados que estão **entrando**, por exemplo, ele utiliza a syscall `read()` para receber os dados.
+
+Antes de entendermos esse gerenciamento, vamos entender **com quem o SO vai trocar dados**.
+
+## Dispositivos de E/S
+
+Um dispositivo de E/S é todo hardware externo ao processador que pode, através de uma conexão que nós já iremos detalhar, tentar se comunicar com o SO (que está sendo executado pela CPU). Os dispositivos de E/S são categorizados, simplificadamente em dispositivos de **bloco** ou dispositivos de **caractere**, em função dos tamanhos das transferência de dados (de 512B a 64KB) e do tipo de acesso (sequencia ou aleatório).
+
+De maneira geral, dispositivos de E/S são conectados ao controlador de E/S apropriado para seu uso, através de interfaces como *SATA, SCSI, USB, Thunderbolt, FireWire, Serial ou Paralela*.
+
+ Uma unidade de E/S, genericamente, é composto por um componente mecânico (onde o dispositivo de E/S se acopla) e um componente eletrônico chamado de **controlador do dispositivo ou adaptador**.
+
+Isso significa que a porta USB-A do seu notebook ou computador, possuí um controlador próprio para ela, que gerencia as informações que entram - de um teclado, por exemplo. Contudo, hardwares extremamente específicos como um HDD/SSD podem possuir controladores internos para interações internas dentro daquele hardware -  por exemplo, o controlador interno do HDD é quem reposiciona as cabeças de leitura.
+
+As funcionalidades desse controlador são comumente providas por circuitos na placa mãe ou em alguma placa adaptadora conectada a algum **barramento** do computador, como o *PCIe*, por exemplo. Controladores possuem registradores de controle internos, que servem para a passagem de comandos e para a verificação do **status** de suas operações. Alguns controladores também possuem **buffers** de dados que podem ser **usados para comunicação**.
+
+> A comunicação entre o SO (sendo executado pela CPU) e os controladores ocorre com o envio de comandos e de dados pelo **barramento ao qual o controlador está conectado.** 
+
+Certo, agora que entendemos o que são os dispositivos com os quais o SO vai trocar dados, vamos entender mais afundo **como essa comunicação ocorre**.
+
+## Como o SO se comunica com os dispositivos de E/S?
+
+Essa comunicação pode ocorrer de duas formas:
+- **Usando instruções (IN e OUT) do processador para leitura e escrita no barramento**
+- **Usando E/S mapeada em memória (Memory Mapped I/O)**
+
+A técnica de *Memory Mapped I/O (MMIO)* é mais eficiente e simplificada de usar pelo SO já que as interações vão ocorrer simplesmente lendo e escrevendo dados em áreas da memória RAM **reservadas para cada controlador** de dispositivo. Para tanto, algumas faixas de endereços são excluídas, sendo que essa **exclusão** é definida por um acordo de parâmetros negociados via protocole de controle dos dispositivos conectados ao barramento PCI/PCIe. Uma vez reservadas, **essas faixas de endereços passam a ser filtradas no chipset de controle de acsso do processador à memória, deixando sob responsabilidade dos dispositivos o tratamento das suas respectivas faixas de endereço reservadas.** Isso significa que, quando um controlador reserva um endereço, toda vez que o processador executar uma instrução para **salvar um dado em um endereço reservado**, o chipset que controla o acesso da CPU na memória irá desviar o fluxo de dados diretamente para o controlador do dispositivo que fez a reserva daquele endereço, para que os dados sejam armazenados no buffer do controlador e possam ser interpretados, posteriormente, pelo dispositivo de E/S.
+
+Dentro dos controladores de dispositivos existem processadores dedicados que são responsáveis por traduzir os comandos recebidos da CPU em instruções específicas para o dispositivo de E/S conectado à unidade de E/S. Na prática, isso significa que o SO não precisa conhecer os detalhes específicos de **todos** os dispositivos de E/S que estão conectados na máquina, basta que ele saiba como interagir com os controladores.
+
+> Isso significa também que o SO pode enviar comandos para que os controladores tratem de forma **autônoma** a entrada e saída de dados dos dispositivos, sejam eles de bloco ou de caractere.
+
+A parte do SO que fica responsável por **interagir com um controlador de E/S** é chamada de **device driver**. Esse código é escrito pela **fabricante** do dispositivo e **instalado** na máquina pelo próprio **usuário**, para que o SO se torne capaz de se comunicar com o controlador do dispositivo. Caso você tente utilizar um componente externo, sem instalar o driver apropriado para sua utilização, muitas vezes o dispositivo **nem será reconhecido pelo SO**.
+
+Como os controladores de E/S possuem processadores próprios, a comunicação entre os diferentes núcleos de CPU e os processadores dos controladores ocorrem através de algum **barramento**. Por ser um barramento, qualquer controlador conectado àquele barramento vai ter acesso às informações que forem propagadas ali. Portanto, é preciso utilizar algum mecanismo para **endereçar** para qual controlador deseja-se realizar a comunicação. Para isso, existem as **portas de entrada e saída (I/O ports)**, endereços pré-definidos pela indústria em faixas para cada tipo de dispositivo. Existe alguma liberdade de configuração para cada controlador de dispositivo dentro dessas faixas.
+
+> Para controladores conectados ao barramento PCI, por exemplo, há até mesmo um protocolo para a negociação dos endereços que serão utilizados pelos controladores.
+
+As instruções de escrita e leitura diretamente no barramento são feitas com **instruções privilegiadas do tipo IN e OUT**.
+
+Agora que sabemos o que é **MMIO** e como funcionam as **I/O ports**, devemos entender um importante conceito para a comunicação entre CPU e os controladores: **Direct Access to Memory (DMA)**
+
+### DMA
+
+O Acesso Direto à memória ocorre quando um dispositivo de E/S coloca um dado na memória RAM **sem que esse dado passe pela CPU**, o que significa que o dado vai parar **direto no barramento de memória**.
+
+Vamos entender como isso funciona mais detalhadamente. Para que o DMA funcione, existem **4 registradores** internos que a CPU acessa via MMIO para dar ordens:
+- **Registrador de Endereço de Memória**: Guarda o endereço de *destino* na RAM
+- **Registrador de Contador de Bytes**: Guarda o tamanho do arquivo/bloco que precisa ser movido
+- **Registrador de Controle**: Define a direção (Leitura ou Escrita)
+- **Registrador de Status**: Indica se o DMA está ocupado, livre ou se terminou a tarefa
+
+Primeiro, a CPU manda a ordem, ajeitando os valores dos 3 primeiros registradores e enviando um sinal para que o controlador comece a preparar os dados. Após isso, a CPU volta ao fluxo normal de execução. Depois, o controlador do dispositivo busca os dados na mídia física e os coloca em seu buffer interno de comunicação. Quando esse buffer fica cheio, o controlador ativa uma linha física de sinal elétrico ligada **diretamente ao DMA** chamada *DREQ (DMA Request)*, na prática significa que o controlador está avisando que os dados estão prontos em seu buffer interno.
+
+Então, após receber o aviso, o DMA envia um sinal **HOLD ou Bus Request** para a CPU, que faz a CPU terminar o ciclo atual do que estava fazendo e desligar temporariamente as saídas elétricas daquele barramento, respondendo com um **HLDA Hold Acknowledge**, o que significa que *a CPU está bloqueando o barramento para que apenas o DMA envie informações*.
+
+Com o barramento inteiro para o DMA, os dados do buffer interno do controlador são liberados no barramento, sendo interceptados pelo DMA que injeta esses dados **diretamente no barramento de memória**, fazendo com que eles fiquem salvos na memória física da RAM, **sem ter que passar pelo processador.**
+
+Finalmente, quando o DMA confirmar que todos os dados foram transferidos, ele pede para que a CPU desative o **HOLD**, liberando o barramento e dispara uma **interrupção física (IRQ)** para a CPU. Por conta da interrupção, o SO assume o controle, vê que os dados estão carregados na memória e avisa o programa que pediu os dados que eles ficaram prontos.
+
+> Não existe, atualmente, um chip específico para realizar o DMA, mas existem, nos próprios controladores de dispositivos rápidos e em alguns canais internos do PCH, componentes que juntos operam para que o DMA funcione corretamente.
+
+> Uma curiosidade, é que os dados circulam em um barramento, tal qual um pacote circula na rede. O que significa que o PCH envia um "**pacote**" pelo barramento. Esse pacote contém um cabeçalho com diversas informações, entre elas uma flag que informa se o pacote deve ser entregue utilizando DMA. É assim que os componentes dispersos pelos barramentos e controladores sabem quando uma informação deve ser entregue via DMA e quando deve ser entregue normalmente pelo barramento.
+
+Beleza, agora entendemos **como o SO se comunica com os dispositivos de E/S**, mas uma coisa que não ficou totalmente clara é **como o SO, os controladores, e os dispositivos de E/S estão fisicamente conectados.**
+
+## Conexões físicas
+
+A primeira coisa que precisamos entender é que a CPU, a memória RAM e os controladores de dispositivos estão **interligados** na placa mãe, e podem ocorrer interações entre eles.
+
+No mundo dos processadores intel, existe o **PCH (Platform Controller Hub)**, sendo esse o chip **principal** da maioria das placas mães, funcionando como um grande concentrador e tradutor de todos os periféricos e controladores de E/S mais lentos, *servindo como ponte entre eles e a CPU*.
+
+Fisicamente, a divisão pode ser resumida pelo diagrama a seguir:
+
+```mermaid
+flowchart TB
+
+subgraph CPU
+	c["Cores"]
+	cnt["Controlador de Memória"]
+	
+	c --> cnt
+end
+
+gpu["GPU/NVMe"]
+
+c -- "PCIe Direto (extrema velocidade)" --> gpu
+
+ram["Memória RAM"]
+
+cnt -- "Barramento de memória DDR4/DDR5" --> ram
+
+c -- "Barramento DMI" --> p
+
+subgraph p["PCH"]
+	x["Contém os controladores para: - Portas USB - Portas SATA - Wifi / Rede / Áudio - Linhas PCIe secundárias"]
+end
+
+```
+
+
+
+
+Vamos destrinchar esse diagrama:
+- **Barramento de Memória**: Liga a CPU diretamente na memória RAM, é controlado pelo **Integrated Memory Controller (IMC)** que fica dentro da CPU. É um barramento paralelo de altíssima velocidade e baixíssima latência. Serve **exclusivamente** para buscar instruções de código e dados que a CPU precisa processar imediatamente.
+- **Linhas PCIe Diretas**: Linhas de barramento que ignoram o PCH e vão direto para os componentes, geralmente que não podem sofrer gargalos, e por isso transmite informações em **alta velocidade**. É usado pela GPU principal e por **SSDs M.2 NVMe**.
+- **Barramento DMI**: Barramento que conecta a CPU no **PCH**, para que o processador consiga interagir com as demais interfaces (ex: USB) e com os demais dispositivos de E/S.
+
+**Como essa disposição de barramentos é utilizada na prática?**
+- **MMIO**: Quando a CPU executa uma instrução para um endereço que está marcado para MMIO, um circuito interno da CPU olha o endereço, percebe que é um endereço que foi reservado por um dispositivo de E/S, e então **ao invés de enviar o sinal elétrico da CPU para o barramento de memória (o que resultaria em um acesso comum à memória) ele envia o sinal pelo barramento DMI, em direção ao PCH**, para que assim, o dispositivo de E/S receba uma instrução da CPU e possa realizar a operação solicitada.
+- **Trabalho do PCH**: O PCH recebe esse sinal do processador vindo do DMI, reconhece que ele é **destinado ao controlador de E/S USB interno** e então propaga esse sinal na linha física da porta USB-A, onde está o seu teclado, por exemplo.
+- **DMA**: Se o seu SSD está fazendo uma transferência via **DMA**, para a RAM, o controlador de dispositivo do SSD joga os dados nas linhas **PCIe do PCH**. O PCH empacota isso e propaga no barramento **DMI**, a CPU recebe esse pacote e, através do seu controlador de memória interno, joga o dado **diretamente** no barramento de memória, salvando tudo na RAM física. Tudo isso **sem incomodar os núcleos da CPU**.
+
+Agora, nós já sabemos bastante sobre entrada e saída. Mas algo importante a ser comentado é: **em que momentos ocorre uma operação de E/S**, já que ainda não sabemos **quando**, isso que estamos estudando vai ocorrer.
+
+## Operações de Entrada e Saída
+
+Bom, nós já sabemos como a E/S funciona, mas **quando exatamente** isso vai ocorrer?
+- **E/S programada:** o SO interage com um dispositivo de E/S e fica esperando a conclusão da operação em **busy waiting** - quando ele fica esperando a conclusão da operação sem liberar a CPU para que ela faça outras tarefas.
+- **E/S orientada à interrupção**: O SO interage com um dispositivo de E/S e espera a conclusão da operação requisitada, **mas sem monopolizar a CPU.** O que acontece aqui, é que é esperada que **uma interrupção seja gerada quando a operação pedida pelo SO chegue ao fim**, o que fara com que o SO retome o controle e conclua o que quer que ele estivesse fazendo que precisava dessa informação de E/S.
+- **DMA**: Uma transferência direta entre o dispositivo de E/S e a memória, com uma interrupção sendo gerada ao fim da transferência para informar que os dados estão prontos.
+
+Agora que entendemos mais sobre as operações de entrada e saída, podemos dizer que compreendemos profundamente os aspectos que permeiam essa seção do SO. Contudo, ainda assim, existem algumas perguntas que não foram respondiads:
+
+## O que contém um Device Driver?
+
+Sabemos que os **drivers** são códigos desenvolvidos pela fabricante do dispositivo de E/S que, uma vez instalados, "ensinam" o controlador de E/S a se comunicar com determinado dispositivo conectado a uma interface. O código de um driver inclui tratamento de interrupções do dispositivos. como operar na ativação do dispositivo e como operar após a ocorrência de uma interrupção, como tratar endereços, entre muitas outras coisas. Um device driver é como se fosse o **dicionário** de um controlador para se comunicar na língua do respectivo dispositivo de E/S.
+
+## Como o SO reconhece dispositivos de E/S?
+
+Essa é uma pergunta muito pertinente, pois o SO precisa conhecer **TODOS** os dispositivos conectados e precisa saber **TODOS** os *barramentos* com os quais eles estão conectados. Para descobrir isso, o SO acessa informações mantidas pela BIOS do sistema computacional (**SMBIOS**), ou então, pode testar cada barramento em busca de dispositivos presentes. No LINUX, ele pode consultar essas informações utilizando o **dmidecode.** Dessa maneira, o SO pode descobrir quais dispositivos de E/S estão conectados à máquina e também em quais barramentos eles estão atuando.
+
+Caso o SO precise consultar informações sobre **quais dispositivos estão utilizando quais I/O ports**, no linux, a relação de endereços é guardada em `/proc/iomem`
+
+Por fim, falta um último e crucial detalhe: **no começo, afirmamos que o sistema de arquivos é utilizado pelo SO para gerenciar a entrada e saída**, e agora, é o momento de entendermos isso.
+
+## Como o SA se relaciona com E/S
+
+Dentro do sistema de arquivos, existem alguns diretórios que **não possuem relação com o disco físico**. Esses diretórios são especiais, e existem somente no **cache de i-nodes**, para que o SO consiga dar um **endereço lógico**, para elementos que são manipulados a partir *das chamadas de sistema de gerenciamento de arquivos*: `open()`, `read()` e `write()`.
+
+Um desses diretórios é o **`/dev`**, que é utilizado pelo SO para dar um endereço lógico para **TODOS** os controladores de dispositivos presentes na máquina.
+
+Quando conectamos um pendrive - por exemplo - em uma porta USB-A da nossa máquina, é criado um i-node dentro do `/dev` que corresponde ao controlador de disco que interage com o pendrive. Dentro desse i-node, são gravados 2 números mágicos:
+- **Major Number**: Identifica qual é o **Driver** responsável por aquele hardware.
+- **Minor Number**: Identifica qual a *instância* do dispositivo (ex: é o segundo pendrive plugado).
+
+Isso significa que caso um programa tente **escrever** dados no *i-node* do disco da sua máquina, quando o SO executar a syscall `write()` o VFS vai identificar que o i-node passado como parâmetro não se refere a um arquivo, **mas sim a um controlador de dispositivo**, e então irá desviar a requisição direto para **as funções de escrita do driver**, que por sua vez irão acionar o **MMIO/DMA** para executar a operação.
+
+> Tudo isso só é possível graças ao VFS que aumenta ainda mais a camada de abstração provida pelo sistema de arquivos, fazendo com que a máxima de que no mundo Unix **tudo é um arquivo**, seja verdadeira.
 
 ---
-
-# Final boss: Do boot ao SIGA.
