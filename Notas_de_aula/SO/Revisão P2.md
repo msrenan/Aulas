@@ -19,10 +19,10 @@ Um HD ou Hard Disk é um dispositivo que armazena memória em discos magnéticos
 Essa divisão é o que proporciona a tradução do mapeamento físico no lógico. Cada HD exporta sua geometria para o SO através de seu **device driver**, para que assim o SO saiba como traduzir o endereço lógico no físico.
 
 Agora, pensando no SO, o Disco é dividido de maneira **lógica** em:
-- **Bloco**: Grupo de setores, que somados totalizam um tamanho X, sendo esse tamanho X a menor unidade utilizada pelo SO para ler e gravar arquivos. Geralmente, um bloco tem o tamanho de uma **página virtual de memória**, para que seja facilitada o carregamento dos dados lidos da memória secundária para a memória primária.
+- **Bloco**: Grupo de setores, que somados totalizam um tamanho X, sendo esse tamanho X a menor unidade utilizada pelo SO para ler e gravar arquivos. Geralmente, um bloco tem o tamanho entre 512 bytes até uma **página virtual de memória**, para que seja facilitada o carregamento dos dados lidos da memória secundária para a memória primária.
 - **Partições**: Divisão primária do Disco, delimitando onde começa e termina cada sistema de arquivos gravado e definido para aquele hardware, permitindo o isolamento de dados e sistemas inteiros.
 
-> OBS: existe duas cabeça de leitura/gravação **por disco**, e todas se movem **juntas** para a mesma posição. Não é possível mover apenas uma cabeça de maneira independente.
+> OBS: existe duas cabeças de leitura/gravação **por disco**, e todas se movem **juntas** para a mesma posição. Não é possível mover apenas uma ou duas cabeças de maneira independente.
 
 #### Fluxo básico de leitura/escrita
 ```mermaid
@@ -30,7 +30,7 @@ flowchart LR
 
 start(("Início do fluxo"))
 driver["Driver: traduz a requisição do SO"]
-heads["Ajusta as cabeças de leitura"]
+heads["Controlador do disco: Ajusta as cabeças de leitura"]
 action{"Leitura/Escrita dos dados no setor e trilha indicados"}
 fim(("Fim do fluxo"))
 
@@ -44,9 +44,9 @@ action -- "Envia a informação lida para que o SO carregue ela em memória prim
 
 Um SSD ou Solid State Driver, diferentemente dos HDDs, não possuí nenhuma parte que se move, sendo **100% eletrônico**. Isso proporcionou um aumento **exponencial** na velocidade de utilização em comparação com os HDDS, mas o custo por hardware também aumentou e a capacidade total de armazenamento, muitas vezes, é menor que a de um HDD.
 
-O SSD é construído em cima da **Memória NAND Flash**. Dentro de cada chip desse de memória, existem incontáveis *transistores de Porta Flutuante* - ou, em tecnologias mais modernas: *Charge Trap Flash* - que funcionam, básicamente como uma **gaiola de elétrons** que é **fortemente isolada** por uma camada de *óxido* (excelente isolante elétrico). Sendo assim, se a gaiola está com um elétron capturado, seu valor é **0** e se estiver vazia é **1**. Então, em cada chip, as milhares de gaiolas existentes formam o código binário da informação. E como a gaiola **mantém o elétron capturado, mesmo sem energia**, graças ao isolamento proveniente da camada de óxido, a informação não se perde.
+O SSD é construído em cima da **Memória NAND Flash**. Dentro de cada chip desse de memória, existem incontáveis *transistores de Porta Flutuante* - ou, em tecnologias mais modernas: *Charge Trap Flash* - que funcionam, basicamente como uma **gaiola de elétrons** que é **fortemente isolada** por uma camada de *óxido* (excelente isolante elétrico). Sendo assim, se a gaiola está com um elétron capturado, seu valor é **0** e se estiver vazia é **1**. Então, em cada chip, as milhares de gaiolas existentes formam o código binário da informação. E como a gaiola **mantém o elétron capturado, mesmo sem energia**, graças ao isolamento proveniente da camada de óxido, a informação não se perde.
 
-> É isso esse isolamento dos transistores é a principal diferença entre o SSD e um chip de memória RAM.
+> Esse isolamento dos transistores é a principal diferença entre o SSD e um chip de memória RAM.
 
 O SSD organiza a informação em uma grade estrita e definida, sendo essa a sua forma de divisão física, em:
 - **Célula**: Cada transistor individual.
@@ -63,7 +63,7 @@ Agora, pensando no SO, o SSD é dividido de maneira **lógica** em:
 
 #### Fluxo de leitura e gravação em um SSD
 - A **gravação** em um SSD envolve a aplicação de uma voltagem específica sobre uma célula, forçando um elétron a atravessar a camada isolante e entrar na gaiola - por meio de um fenômeno da física quântica chamado de **tunelamento**.
-- Já a **leitura** em um SSD envolve a passagem de uma corrente baixa pela célula. Se a corrente passar sem dificuldades, a gaiola está vazia e seu valor é **1**, se a corrente encontrar dificuldades para passar por aquela célula, significa que os elétrons presos dentro da gaiola estão gerando um campo magnético que está gerando uma resistência para a corrente, e, portanto, o SSD sabe que aquela célula está preenchida, e se valor é **0**.
+- Já a **leitura** em um SSD envolve a passagem de uma corrente baixa pela célula. Se a corrente passar sem dificuldades, a gaiola está vazia e seu valor é **1**, se a corrente encontrar dificuldades para passar por aquela célula, significa que os elétrons presos dentro da gaiola estão gerando um campo magnético que está gerando uma resistência para a corrente, e, portanto, o SSD sabe que aquela célula está preenchida, e seu valor é **0**.
 
 ```mermaid
 flowchart LR
@@ -115,18 +115,18 @@ O que nós precisamos entender sobre a manipulação de memória persistente pel
 - **Como o SO pede as informações para hardware?**
 - **O que o SO faz com as informações recebidas pelo hardware?**
 
-Essas perguntas são essenciais para entendermos como o SO lê e grava informações em memória secundária. O SO não tem acesso direto ao disco, ele precisa pedir as informações para o hardware, que deve aceitar o pedido e devolver as informações solicitadas. Essa comunicação pelo SO e o hardware é feita via **device driver**. Não vamos nos aprofundar muito sobre device drivers (agora, já que é nosso próximo tópico de estudo), mas o driver do nosso hardware espera uma requisição de leitura ou uma requisição de escrita.  Em resumo, ambas requisições devem ter:
+Essas perguntas são essenciais para entendermos como o SO lê e grava informações em memória secundária. O SO não tem acesso direto ao disco, ele precisa pedir as informações para o hardware, que deve aceitar o pedido e devolver as informações solicitadas. Essa comunicação pelo SO e o hardware é feita via **controladores de E/S**. Não vamos nos aprofundar muito sobre a questão da E/S (agora, já que é nosso próximo tópico de estudo), mas o controlador de E/S do nosso hardware espera uma requisição de leitura ou uma requisição de escrita.  Em resumo, ambas requisições devem ter:
 - **onde** na organização lógica do SO está a informação requisitada/deseja-se gravar a informação
 - número de bytes (**tamanho**) que se deseja ler/escrever.
 - onde na **RAM** serão carregados os dados lidos/estão os dados a serem gravados.
 
-Então, os SO mandam a requisição para os drivers de disco, que traduzem o endereço lógico em físico e manipulam seus respectivos hardwares, baseados na requisição feita pelo SO, executam a operação e retornam para o SO, ou uma confirmação - no caso da escrita - ou os dados requisitados - no caso da leitura.
+Então, o SO manda a requisição para os controladores de disco, que traduzem o endereço lógico em físico e manipulam seus respectivos hardwares baseados na requisição feita pelo SO, executam a operação e retornam para o SO, ou uma confirmação - no caso da escrita - ou os dados requisitados - no caso da leitura.
 
 > OBS: Os controladores de disco pedem o **endereço na RAM** na requisição pois são capazes de realizar *Direct Acess to Memory* (DMA), na memória RAM, podendo escrever ou ler conteúdos da **RAM** sem o intermédio do SO ou da CPU.
 
-Isso responde nossa primeira pergunta: `'Como o SO pede as informações para o hardware?'`: O SO envia uma requisição contendo o endereço de memória lógico dos dados que serão manipulados, indicando qual operação será realizada (leitura ou escrita), indicando quantos bytes serão manipulados e o onde na RAM devem ser colocados os dados, em caso de leitura, ou, de onde na RAM devem ser retirados os dados, em caso de gravação. Uma vez enviada a requisição, o driver verifica a memória RAM da máquina, para ajeitar o espaço para inserir informações em caso de leitura ou para checar as informações já existentes,em caso de escrita, depois realiza a tradução do endereço lógico do **sistema de arquivos** em um endereço físico para o hardware de memória secundária, realiza os procedimentos necessários pré-operação (que divergem dependendo do tipo de hardware SSD ou HDD) e, finalmente, realiza a operação da requisição. Uma vez finalizada a operação, o driver sinaliza para a CPU que finalizou a operação requisitada pelo SO e uma interrupção é gerada para que o SO lide com a finalização da operação.
+Isso responde nossa primeira pergunta: `'Como o SO pede as informações para o hardware?'`: O SO envia uma requisição contendo o endereço de memória lógico dos dados que serão manipulados, indicando qual operação será realizada (leitura ou escrita), indicando quantos bytes serão manipulados e o onde na RAM devem ser colocados os dados, em caso de leitura, ou, de onde na RAM devem ser retirados os dados, em caso de gravação. Uma vez enviada a requisição, o driver verifica a memória RAM da máquina, para ajeitar o espaço para inserir informações em caso de leitura ou para checar as informações já existem naquele endereço, em caso de escrita, depois realiza a tradução do endereço lógico do **sistema de arquivos** em um endereço físico para o hardware de memória secundária, realiza os procedimentos necessários pré-operação (que divergem dependendo do tipo de hardware SSD ou HDD) e, finalmente, realiza a operação da requisição. Uma vez finalizada a operação, o driver sinaliza para a CPU que finalizou a operação requisitada pelo SO e uma interrupção é gerada para que o SO lide com a finalização da operação.
 
-> Vale ressaltar que em caso de leitura, no momento em que a confirmação é enviada pelo driver, os dados lidos já estão em RAM para que o SO manipule eles. Isso implica que, uma vez acionado, o SO deve inserir esses dados na tabela de páginas do processo que requisitou eles. Em caso de leitura, a confirmação indica o fim da gravação dos dados em memória persistente.
+> Vale ressaltar que em caso de leitura, no momento em que a confirmação é enviada pelo driver, os dados lidos já estão em RAM para que o SO manipule eles. Isso implica que, uma vez acionado, o SO deve inserir esses dados na tabela de páginas do processo que requisitou eles. Em caso de escrita, a confirmação indica o fim da gravação dos dados em memória persistente.
 
 Agora, uma vez que a operação requisitada é realizada, o SO precisa lidar com a resposta do driver, que pode ser - em caso de leitura - uma confirmação que significa que os dados já estão carregados em RAM, ou - em caso de escrita - que os dados já foram armazenados de maneira persistente, o que significa que, dependendo do intuito da aplicação, o SO já pode descarregá-los da RAM.
 
@@ -150,9 +150,11 @@ Arquivos, internamente, podem ser organizados em:
 - **Sequência de registros**: nesta organização, o arquivo é dividido em *registros de tamanho fixo*, o que significa que, por exemplo, cada linha representa um registro. Para que este tipo de organização funcione, é necessário que a operação de escrita **adicione ou sobreponha um registro**, e a de leitura **retorne um registro em uma posição especificada**. É uma organização muito usada em banco de dados pois facilita a manipulação de uma estrutura fixa de dados.
 - **Árvore de registros**: nesta organização, o arquivo em si representa uma *árvore de registro de tamanhos variados*, o que significa que toda a manipulação de dados deste tipo de arquivo é feita utilizando a árvore que ele representa. Este, também é muito utilizado em bancos de dados, já que essa organização acelera muito a busca, inserção e remoção de registros dentro do arquivo.
 
-Existem alguns tipos comuns de arquivo - *tipos esses diferentes do tipo que é sinalizado pela extensão de um arquivo, relacionados à estruturação interna* - vamos entendê-los:
-- **Arquivo comum/executável**: Contém um cabeçalho que possuí: o magic number, algumas métricas e o um ponteiro para o início da seção de dados, além de algumas flags e fora do cabeçalho, existem a seção de texto, de dados, entre outras.
-- **Diretório**: Contém vários cabeçalhos contendo o nome dos arquivos contidos em si, suas datas de criação, proprietários, permissões e por fim, logo após o fim do cabeçalho de cada arquivo, um ponteiro que aponta para o endereço do primeiro bloco do arquivo em si.
+Existem alguns tipos comuns de arquivo - *tipos esses diferentes do tipo que é sinalizado pela extensão de um arquivo, relacionados à estruturação interna e função* - vamos entendê-los:
+- **Arquivo comum/executável**: Contém um cabeçalho que possuí: o magic number, algumas métricas e o um ponteiro para o início da seção de dados, além de algumas flags e fora do cabeçalho, existem a seção de texto, de dados, entre outras. A maioria dos arquivos se encaixa aqui.
+- **Diretório**: Contém vários cabeçalhos contendo o nome dos arquivos contidos em si, suas datas de criação, proprietários, permissões e por fim, logo após o fim do cabeçalho de cada arquivo, um ponteiro que aponta para o endereço do primeiro bloco do arquivo em si. Por mais contraditório que seja, uma **pasta** ainda é um **arquivo**.
+
+> Existe uma máxima bem famosa no universo UNIX, que afirma que "No UNIX, **tudo** é um arquivo."
 
 Entendemos, então, o que é um arquivo para o SO, e sabemos que os arquivos são unidades lógicas de informação que mapeiam blocos físicos do disco, mas como funciona esse mapeamento? 
 
@@ -174,16 +176,16 @@ Para começar, vamos discutir sobre a função do sistema de arquivos. Sua funç
 - **Leitura**: O SO deseja ler o conteúdo de um arquivo armazenado no hardware de memória secundária. Cabe ao sistema de arquivos receber esse pedido, e interagir com o driver do hardware em nome do SO.
 - **Escrita**: O SO deseja gravar uma informação da memória primária para a memória persistente. Cabe ao sistema de arquivos receber esse pedido, e interagir com o driver do hardware em nome do SO.
 
-Beleza, sabemos então que o Sistema de Arquivos vai abstrair o pedido do SO para o device driver. É só isso que ele faz? **Não.** Enquanto entendíamos como os dispositivos de hardware (HDD ou SSD) funcionavam, nós aprendemos que *o hardware possuí uma divisão física que proporcionava a **tradução de endereços lógicos** em endereços físicos*, mas até então, nunca havíamos parado pra pensar "De onde vêm esses endereços lógicos?", bem a resposta é simples: **do sistema de arquivos**. Para entender como isso funciona, devemos entender primeiro a **organização do sistema de arquivos**.
+Beleza, sabemos então que o Sistema de Arquivos vai abstrair o pedido do SO para o controlador de disco. É só isso que ele faz? **Não.** Enquanto entendíamos como os dispositivos de hardware (HDD ou SSD) funcionavam, nós aprendemos que *o hardware possuí uma divisão física que proporcionava a **tradução de endereços lógicos** em endereços físicos*, mas até então, nunca havíamos parado pra pensar "De onde vêm esses endereços lógicos?", bem a resposta é simples: **do sistema de arquivos**. Para entender como isso funciona, devemos entender primeiro a **organização do sistema de arquivos**.
 
 ### Estrutura Interna do SA (Sistema de Arquivos)
 
-Sabemos que um disco pode ser **particionado**, e como vimos anteriormente, cada partição permite o **isolamento** de dados e **sistemas de arquivos inteiros**. Vamos começar deste ponto. Um disco, contém, obrigatoriamente, *MBR - Master Boot Record* - correspondendo ao **Setor 0 do disco**, com exatos 512 bytes, contendo um gerenciador de boot do próprio disco e uma **tabela de partições** - para que o disco saiba, assim que inicializar, quais blocos estão dentro de cada partição. 
+Sabemos que um disco pode ser **particionado**, e como vimos anteriormente, cada partição permite o **isolamento** de dados e **sistemas de arquivos inteiros**. Vamos começar deste ponto. Um disco, contém, obrigatoriamente, o *MBR - Master Boot Record* - correspondendo ao **Setor 0 do disco**, com exatos 512 bytes, contendo um gerenciador de boot do próprio disco e uma **tabela de partições** - para que o disco saiba, assim que inicializar, quais blocos estão dentro de cada partição. 
 
 Então, logo após a tabela de partições, começam as partições normais de um disco, em que, cada uma representa **obrigatoriamente**, um sistema de arquivos diferente - **independente desse SA estar associado a um SO diferente ou não.**  As partições normais, são subdividias, na grande maioria das vezes em:
-- **Bloco de inicialização**: Contém o código do **bootloader**, que é responsável por carregar o sistema operacional.
+- **Bloco de inicialização**: Contém o código do **bootloader** do SO responsável por aquela partição, que é responsável por carregar o sistema operacional.
 - **Superbloco:** Contém parâmetros-chave a respeito do sistema de arquivos e é lido para a memória RAM assim que o computador é inciado, ou quando o sistema de arquivos é **montado**.
-- **Gerenciamento de espaço livre**: Contém informações a respeito dos blocos de disco mapeados no sistema de arquivos na forma de *bitmaps* ou uma *lista de ponteiros*.
+- **Gerenciamento de espaço livre**: Contém informações a respeito dos blocos de disco livres mapeados no sistema de arquivos na forma de *bitmaps* ou uma *lista de ponteiros*.
 - **I-nodes**: Contém uma lista com **todos** os **I-nodes** registrados no SA. (Daremos ênfase em **o que é um i-node e qual sua importância**, em breve).
 - **Diretório-raiz**: Contém o ponteiro para o **i-node** do diretório raiz do sistema de arquivos (no universo UNIX, é o famoso: "/")
 - **Arquivos e diretórios**: Contém toda a árvore de **i-nodes** que mapeiam a estrutura hierárquica de pastas e arquivos. *Árvore essa cuja raiz é o diretório "/".*
@@ -192,11 +194,11 @@ Então, logo após a tabela de partições, começam as partições normais de u
 
 #### I-nodes
 
-É o **tipo de alocação** de arquivo mais otimizado atualmente, em que cada bloco de um arquivo é associado a um *i-node (index-node)*, que lista os atributos e os endereços de disco dos blocos referentes ao arquivo desejado. Se você possuí o i-node de um arquivo, é possível encontrar **todos os blocos daquele arquivo**. A vantagem do esquema de i-nodes sobre a *lista encadeada tabelada em RAM* é que o **i-node de um arquivo só precisa estar carregado em memória quando o arquivo *está aberto***. Um problema envolvendo os i-nodes, é que o número de endereços que ele comporta é fixo, e caso um arquivo ultrapasse esse número de blocos de disco, a solução é reservar o último espaço de endereço de disco para que ele armazene o endereço de um bloco que contém o resto dos endereços do arquivo que não couberam no i-node.
+É o **tipo de alocação** de arquivo mais otimizado atualmente, em que cada bloco de um arquivo é associado a um *i-node (index-node)*, que lista os atributos e os endereços de disco dos blocos referentes ao arquivo desejado. Se você possuí o i-node de um arquivo, é possível encontrar **todos os blocos daquele arquivo**. A vantagem do esquema de i-nodes sobre a *lista encadeada tabelada em RAM* é que o **i-node de um arquivo só precisa estar carregado em memória RAM quando o arquivo *está aberto***. Um problema envolvendo os i-nodes, é que o número de endereços que ele comporta é fixo, e caso um arquivo ultrapasse esse número de blocos de disco, a solução é reservar o último espaço de endereço de disco para que ele armazene o endereço de um bloco que contém o resto dos endereços do arquivo que não couberam no i-node.
 
 Certo, agora que sabemos o que é um **i-node** e entendemos qual a relação dessa estrutura com **arquivos**, precisamos entender qual é a relação dessa estrutura com **diretórios**.
 
-Normalmente, se não utilizarmos i-node, um diretório precisaria manter os **atributos** de cada arquivo dentro dele no **cabeçalho do arquivo** presente no ponto de entrada do diretório. Utilizando i-nodes, basta que o diretório guarde o **nome do arquivo** e o **ponteiro para o i-node do arquivo**, que conterá todas as informações de atributos e endereços de blocos de disco. A pergunta natural a se fazer agora é *como é armazenado esse ponto de entrada de um diretório?*, a resposta você já sabe: **em um i-node**. Ao invés de conter os atributos do arquivo e um ponteiro para os blocos de disco do arquivo, um i-node que representa um **diretório**, contém atributos do diretório e **ponteiros apontando para cada i-node dos arquivos de dentro daquele diretório.**
+Normalmente, se não utilizarmos i-node, um diretório precisaria manter os **atributos** de cada arquivo dentro dele no **cabeçalho do arquivo** presente no ponto de entrada do diretório. Utilizando i-nodes, basta que o diretório guarde o **nome do arquivo** e o **ponteiro para o i-node do arquivo**, que conterá todas as informações de atributos e endereços de blocos de disco. A pergunta natural a se fazer agora é *como é armazenado esse ponto de entrada de um diretório?*, a resposta você já sabe: **em um i-node**. Ao invés de conter os atributos do arquivo e um ponteiro para os blocos de disco do arquivo, um i-node que representa um **diretório**, contém atributos do diretório e **ponteiros apontando para cada i-node dos arquivos de dentro daquele diretório.** 
 
 Isso faz com que a estrutura do sistema de arquivos se pareça com esse diagrama:
 ```mermaid
@@ -219,6 +221,7 @@ B --> P1
 P1 --> A1
 P1 --> A2
 ```
+ 
  Em que cada nó do diagrama representa um **i-node**.
 
 Dessa forma, entendemos como se estrutura um **Sistema de Arquivos**. Entendemos também como ele organiza a **hierarquia de pastas e diretórios** usando i-nodes. Mas ainda faltam responder algumas perguntas.
@@ -227,7 +230,7 @@ Dessa forma, entendemos como se estrutura um **Sistema de Arquivos**. Entendemos
 
 Os diferentes tipos de sistema de arquivos variam na ordem que as informações são armazenadas, nos atributos dos i-nodes, na hierarquia de pastas e entre muitas outras coisas. **Como o SO sabe se comunicar com todos os diferentes tipos de SA?** A resposta é bem simples: **Virtual File System - VFS.**
 
-O SO utiliza um Sistema de Arquivos Virtual para fazer os seus pedidos de *leitura e escrita*. O que ele faz, é pedir a leitura/escrita para o VFS, que nada mais é do que uma **API** que padroniza funções padrões de **read()** e **write()**, que devem existir para **TODOS** os sistemas de arquivos. Na prática, o que o SO faz é algo parecido com: `ext4.vfs.read()` ou `vfat.vfs.read()`.
+O SO utiliza um Sistema de Arquivos Virtual para fazer os seus pedidos de *leitura e escrita*. O que ele faz, é pedir a leitura/escrita para o VFS, que nada mais é do que uma **API** que padroniza funções padrões de **read()** e **write()**, que devem existir para **TODOS** os sistemas de arquivos. Na prática, o que o SO faz é algo parecido com: `ext4.vfs.read()` ou `vfat.vfs.read()`. Quando uma syscall `read()` é chamada, por exemplo, o SO irá executar essa sycall **pelo VFS**, o que garante que não será qualquer algoritmo de leitura que será executado, **e sim o algoritmo ESPECÍFICO daquele SA.**
 
 ## Os endereços armazenados em um i-node, são os endereços físicos dos blocos no disco?
 
@@ -244,7 +247,7 @@ Ao iniciar o processo de montagem, o kernel lê o superbloco daquela partição 
 
 A árvore de todos os i-nodes **sempre** existe em memória secundária. Contudo, o **cache de i-nodes**, não é carregado totalmente preenchido na memória RAM durante a montagem, e é preenchido gradualmente.
 
-Agora sim, podemos dizer que **entendemos** como o Linux gerencia arquivos. Mas você pode estar se perguntando: "E aquela comunicação entre o SO e os device drivers, como funcionam?", esse é nosso próximo tópico de estudo.
+Agora sim, podemos dizer que **entendemos** como o Linux gerencia arquivos. Mas você pode estar se perguntando: "E aquela comunicação entre o SO e os controladores de E/S, como funcionam?", esse é nosso próximo tópico de estudo.
 
 ---
 
@@ -260,13 +263,13 @@ Antes de entendermos esse gerenciamento, vamos entender **com quem o SO vai troc
 
 Um dispositivo de E/S é todo hardware externo ao processador que pode, através de uma conexão que nós já iremos detalhar, tentar se comunicar com o SO (que está sendo executado pela CPU). Os dispositivos de E/S são categorizados, simplificadamente em dispositivos de **bloco** ou dispositivos de **caractere**, em função dos tamanhos das transferência de dados (de 512B a 64KB) e do tipo de acesso (sequencia ou aleatório).
 
-De maneira geral, dispositivos de E/S são conectados ao controlador de E/S apropriado para seu uso, através de interfaces como *SATA, SCSI, USB, Thunderbolt, FireWire, Serial ou Paralela*.
+De maneira geral, dispositivos de E/S são conectados à uma unidade de E/S apropriado para seu uso, através de interfaces como *SATA, SCSI, USB, Thunderbolt, FireWire, Serial ou Paralela*.
 
  Uma unidade de E/S, genericamente, é composto por um componente mecânico (onde o dispositivo de E/S se acopla) e um componente eletrônico chamado de **controlador do dispositivo ou adaptador**.
 
 Isso significa que a porta USB-A do seu notebook ou computador, possuí um controlador próprio para ela, que gerencia as informações que entram - de um teclado, por exemplo. Contudo, hardwares extremamente específicos como um HDD/SSD podem possuir controladores internos para interações internas dentro daquele hardware -  por exemplo, o controlador interno do HDD é quem reposiciona as cabeças de leitura.
 
-As funcionalidades desse controlador são comumente providas por circuitos na placa mãe ou em alguma placa adaptadora conectada a algum **barramento** do computador, como o *PCIe*, por exemplo. Controladores possuem registradores de controle internos, que servem para a passagem de comandos e para a verificação do **status** de suas operações. Alguns controladores também possuem **buffers** de dados que podem ser **usados para comunicação**.
+As funcionalidades desse controlador, da unidade de E/S, são comumente providas por circuitos na placa mãe ou em alguma placa adaptadora conectada a algum **barramento** do computador, como o *PCIe*, por exemplo. Controladores possuem registradores de controle internos, que servem para a passagem de comandos e para a verificação do **status** de suas operações. Alguns controladores também possuem **buffers** de dados que podem ser **usados para comunicação**.
 
 > A comunicação entre o SO (sendo executado pela CPU) e os controladores ocorre com o envio de comandos e de dados pelo **barramento ao qual o controlador está conectado.** 
 
@@ -275,10 +278,10 @@ Certo, agora que entendemos o que são os dispositivos com os quais o SO vai tro
 ## Como o SO se comunica com os dispositivos de E/S?
 
 Essa comunicação pode ocorrer de duas formas:
-- **Usando instruções (IN e OUT) do processador para leitura e escrita no barramento**
+- **Usando instruções (IN e OUT) do processador para leitura e escrita no barramento** (método antigo)
 - **Usando E/S mapeada em memória (Memory Mapped I/O)**
 
-A técnica de *Memory Mapped I/O (MMIO)* é mais eficiente e simplificada de usar pelo SO já que as interações vão ocorrer simplesmente lendo e escrevendo dados em áreas da memória RAM **reservadas para cada controlador** de dispositivo. Para tanto, algumas faixas de endereços são excluídas, sendo que essa **exclusão** é definida por um acordo de parâmetros negociados via protocole de controle dos dispositivos conectados ao barramento PCI/PCIe. Uma vez reservadas, **essas faixas de endereços passam a ser filtradas no chipset de controle de acsso do processador à memória, deixando sob responsabilidade dos dispositivos o tratamento das suas respectivas faixas de endereço reservadas.** Isso significa que, quando um controlador reserva um endereço, toda vez que o processador executar uma instrução para **salvar um dado em um endereço reservado**, o chipset que controla o acesso da CPU na memória irá desviar o fluxo de dados diretamente para o controlador do dispositivo que fez a reserva daquele endereço, para que os dados sejam armazenados no buffer do controlador e possam ser interpretados, posteriormente, pelo dispositivo de E/S.
+A técnica de *Memory Mapped I/O (MMIO)* é mais eficiente e simplificada de usar pelo SO já que as interações vão ocorrer simplesmente lendo e escrevendo dados em áreas da memória RAM **reservadas para cada controlador** de dispositivo. Para tanto, algumas faixas de endereços são excluídas, sendo que essa **exclusão** é definida por um acordo de parâmetros negociados via protocolo de controle dos dispositivos conectados ao barramento PCI/PCIe. Uma vez reservadas, **essas faixas de endereços passam a ser filtradas no chipset de controle de acesso do processador à memória, deixando sob responsabilidade dos dispositivos o tratamento das suas respectivas faixas de endereço reservadas.** Isso significa que, quando um controlador reserva um endereço, toda vez que o processador executar uma instrução para **salvar um dado em um endereço reservado**, o chipset que controla o acesso da CPU na memória irá desviar o fluxo de dados diretamente para o controlador do dispositivo que fez a reserva daquele endereço, para que os dados sejam armazenados no buffer do controlador e possam ser interpretados, posteriormente, pelo dispositivo de E/S.
 
 Dentro dos controladores de dispositivos existem processadores dedicados que são responsáveis por traduzir os comandos recebidos da CPU em instruções específicas para o dispositivo de E/S conectado à unidade de E/S. Na prática, isso significa que o SO não precisa conhecer os detalhes específicos de **todos** os dispositivos de E/S que estão conectados na máquina, basta que ele saiba como interagir com os controladores.
 
