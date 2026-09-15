@@ -31,11 +31,39 @@ Existem vários algorítmos de escalonamento que um Load Balancer pode adotar, e
 - **IP Hash**: Um método que possuí aplicação prática mais específica, se resume em atrelar o IP do cliente (na forma de um Hash) a um servidor específico. Dessa forma, todas as requisições daquele IP vão sempre ser redirecionadas para o mesmo servidor. Isso implica que aplicações envolvendo controle de sessão não vão se quebrar caso o cliente tenha que se reconectar.
 - **Least Response Time**: Considerado o melhor método de escalonamento, redireciona as requisições para o servidor com menor tempo de resposta. Priorizando a experiência do usuário.
 
-## Vantanges
+## Vantangens
+As vantagens de se fazer um loadbalancer e escolher a escalabilidade horizontal ao invés da vertical são:
 
-## Maneiras de implementar
+1. **Distribuição de carga**: Evita que um servidor fique sobrecarregado, enquanto outros ficam ociosos - melhorando throughput, latência e uso de recursos.
+2. **Alta disponibilidade e failover**: Pode checar a saúde de servidores com *health checks* e para de mandar tráfego para instâncias doentes, o que significa que mesmo que um servidor morra, os outros continuam funcionando.
+3. **Escalabilidade horizontal**: Você pode adicionar e remover servidores conforme a demanda, que o seu serviço nunca para de rodar. Ótimo para autoscaling em cloud.
+4. **Manutenção e deploys sem downtime**: Permite *rolling-updates*, *blue-green* servers, *canários*, etc. Você drena conexões de um server para outro antes de desligá-lo.
+5. **Segurança**: Por ser um proxy reverso, esconde os IPs dos servidores, funciona como *entrypoint* para o ecossistema do seu serviço, centralizando as políticas de tráfego.
+6. **Roteamento customizável e inteligente.**
+7. **Observabilidade**: Pode centralizar métricas de tráfego, erros, latência e saturação de servidores.
 
-## Live coding
+Perceba que o load balancer implica, automáticamente, na escalada horizontal do serviço, e não vertical.
 
+### Escalabilidade Horizontal x Vertical
+
+- **Vertical**:
+	- Teto físico de potência
+	- Custo não linear (server 2x mais potente > 2x servers)
+	- Downtime
+	- Chance única (se cair o servidor, cai tudo)
+	- Não resolve falha de zona/região
+	- Picos extremos = lentidão
+- **Horizontal**
+	- Tolerância a falhas
+	- Elasticidade (mais fácil de escalar)
+	- Custo benefício
+	- Manutenção contínua (e sem downtime)
+	- Crescimento semi-linear
+	- isolamento de falhas
+
+Mas mesmo assim, é importante destacar que a escalabilidade horizontal **tem suas desvantagens**:
+- **Banco de dados**: Costuma ser o gargalo desse tipo de escalabilidade. Técnicas para mitigar essa desvantanges incluem **sharding**, **bancos compartilhados** entre outras.
+- **Aumento considerável de complexidade operacional**: Deploy da infraestrutura costuma ficar mais complexo.
+- **Sessão**: Se não for uma aplicação stateless, precisa utilizar sessão compartilhada.
 ## E o psel?
 
